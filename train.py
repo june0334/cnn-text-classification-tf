@@ -6,6 +6,7 @@ import os
 import time
 import datetime
 import process
+from tqdm import tqdm
 from text_cnn import TextCNN
 from tensorflow.contrib import learn
 
@@ -13,14 +14,16 @@ from tensorflow.contrib import learn
 # ==================================================
 
 # Data loading params
-tf.flags.DEFINE_float("dev_sample_percentage", .1, "Percentage of the training data to use for validation")
 tf.flags.DEFINE_string("intention_data_file", "/nfs/project/data/", "Data source for intention classification")
+tf.flags.DEFINE_float("dev_sample_percentage", .1, "Percentage of the training data to use for validation")
+tf.flags.DEFINE_string("glove_dir", "/nfs/project/data/", "glove data directory")
+tf.flags.DEFINE_string("glove_corpus", "6B", "glove corpus (default: 6B)")
+tf.flags.DEFINE_integer("glove_vec_size", 100, "glove vector size (default: 100)")
 tf.flags.DEFINE_string("positive_data_file", "./data/rt-polaritydata/rt-polarity.pos", "Data source for the positive data.")
 tf.flags.DEFINE_string("negative_data_file", "./data/rt-polaritydata/rt-polarity.neg", "Data source for the negative data.")
 
 # Model Hyperparameters
-tf.flags.DEFINE_string("glove_corpus", "6B", "glove corpus (default: 6B)")
-tf.flags.DEFINE_integer("glove_vec_size", 100, "glove vector size (default: 100)")
+tf.flags.DEFINE_string("embedding_style", "glove", "embedding style (default: use glove vector)")
 tf.flags.DEFINE_integer("embedding_dim", 128, "Dimensionality of character embedding (default: 128)")
 tf.flags.DEFINE_string("filter_sizes", "3,4,5", "Comma-separated filter sizes (default: '3,4,5')")
 tf.flags.DEFINE_integer("num_filters", 128, "Number of filters per filter size (default: 128)")
@@ -53,12 +56,22 @@ print("Loading data...")
 timestamp = str(int(time.time()))
 out_dir = os.path.abspath(os.path.join(os.path.curdir, "runs", timestamp))
 x, y = process.load_data(FLAGS.intention_data_file, out_dir, float(0.2), True)
-x = [instance.split() for instance in x]
 max_instance_length = max([len(instance) for instance in x])
 x = [instance.append([""] * (max_instance_length - len(instance))) if len(instance) < max_instance_length else instance
      for instance in x]
 intents = ["greeting", "intent_resturant_search", "slots_wait", "slots_fill", "confirm"]
 y = [[0 if i != intents.index(intent) else 1 for i in range(len(intents))] for intent in y]
+
+glove_data_path = os.path.join(FLAGS.glove_dir, "glove.{}.{}d.txt".format(FLAGS.glove_corpus, FLAGS.glove_vec_size))
+sizes = {'6B': int(4e5), '42B': int(1.9e6), '840B': int(2.2e6), '2B': int(1.2e6)}
+total = sizes[FLAGS.glove_corpus]
+glove_vacabulary = {}
+with open(glove_data_path, 'r', encoding='utf8') as gd:
+    for line in tqdm(gd, total=total):
+        array = line.strip().split(" ")
+        word = array[0]
+        vector = list(map(float, array[1:]))
+        glove_vacabulary[word] = vector
 # Build vocabulary
 #max_document_length = max([len(x.split(" ")) for x in x_text])
 #vocab_processor = learn.preprocessing.VocabularyProcessor(max_document_length)
@@ -94,7 +107,10 @@ with tf.Graph().as_default():
             sequence_length=max_instance_length,
             num_classes=len(intents),
             vocab_size=0,
-            embedding_size=FLAGS.embedding_dim,
+            glove_vacabulary=glove_vacabulary,
+            glove_embedding_size=FLAGS.glove_vec_size,
+            embedding_size=FLAGS.glove_vec_size,
+            embedding_style=FLAGS.embedding_style,
             filter_sizes=list(map(int, FLAGS.filter_sizes.split(","))),
             num_filters=FLAGS.num_filters,
             l2_reg_lambda=FLAGS.l2_reg_lambda)

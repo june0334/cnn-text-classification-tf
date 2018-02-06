@@ -4,6 +4,7 @@
 import json
 import os
 import numpy as np
+import nltk
 
 
 def load_data(ffile, out_dir, test_sample_percentage, shuffle=True):
@@ -29,7 +30,7 @@ def load_data(ffile, out_dir, test_sample_percentage, shuffle=True):
             map(lambda x: train_file.write("||".join(x) + "\n"), list(zip(utterance_train, intent_train)))
         with open(os.path.join(data_dir, "test"), "w") as test_file:
             map(lambda x: test_file.write("||".join(x) + "\n"), list(zip(utterance_test, intent_test)))
-        utterance_train = [instance.split() for instance in utterance_train]
+        utterance_train = [nltk.word_tokenize(instance) for instance in utterance_train]
         return utterance_train, intent_train
 
 

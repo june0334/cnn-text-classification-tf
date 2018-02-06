@@ -8,8 +8,11 @@ class TextCNN(object):
     Uses an embedding layer, followed by a convolutional, max-pooling and softmax layer.
     """
     def __init__(
-      self, sequence_length, num_classes, vocab_size,
-      embedding_size, filter_sizes, num_filters, l2_reg_lambda=0.0):
+      self, sequence_length, num_classes, vocab_size, glove_vacabulary, glove_embedding_size,
+      embedding_size, embedding_style, filter_sizes, num_filters, l2_reg_lambda=0.0):
+
+        self.glove_embedding_vacab = glove_vacabulary
+        self.basic_embedding_size = glove_embedding_size
 
         # Placeholders for input, output and dropout
         self.input_x = tf.placeholder(tf.int32, [None, sequence_length], name="input_x")
@@ -24,7 +27,7 @@ class TextCNN(object):
             self.W = tf.Variable(
                 tf.random_uniform([vocab_size, embedding_size], -1.0, 1.0),
                 name="W")
-            self.embedded_chars = tf.nn.embedding_lookup(self.W, self.input_x)
+            self.embedded_chars = self.do_embedding(self.input_x)
             self.embedded_chars_expanded = tf.expand_dims(self.embedded_chars, -1)
 
         # Create a convolution + maxpool layer for each filter size
@@ -82,3 +85,6 @@ class TextCNN(object):
         with tf.name_scope("accuracy"):
             correct_predictions = tf.equal(self.predictions, tf.argmax(self.input_y, 1))
             self.accuracy = tf.reduce_mean(tf.cast(correct_predictions, "float"), name="accuracy")
+
+    def do_embedding(self, embedding_style):
+        return embedding_style
