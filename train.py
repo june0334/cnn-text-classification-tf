@@ -56,22 +56,61 @@ print("Loading data...")
 timestamp = str(int(time.time()))
 out_dir = os.path.abspath(os.path.join(os.path.curdir, "runs", timestamp))
 x, y = process.load_data(FLAGS.intention_data_file, out_dir, float(0.2), True)
-max_instance_length = max([len(instance) for instance in x])
-x = [instance.append([""] * (max_instance_length - len(instance))) if len(instance) < max_instance_length else instance
-     for instance in x]
-intents = ["greeting", "intent_resturant_search", "slots_wait", "slots_fill", "confirm"]
-y = [[0 if i != intents.index(intent) else 1 for i in range(len(intents))] for intent in y]
 
+# corpus words
+vocabulary = set()
+map(lambda sentence: map(lambda word: vocabulary.add(word), sentence), x)
+
+vocab_list = list(vocabulary)
+# word index
+vocab_dict = {}
+for i in range(len(vocab_list)):
+    vocab_dict[vocab_list[i]] = i+1
+
+x = list(map(lambda sentence: list(map(lambda word: vocab_dict[word], sentence)), x))
+max_sentence_length = max(list(map(len, x)))
+x = list(map(lambda sentence: sentence.append([0] * (max_sentence_length - len(sentence))) if len(sentence) <
+                                                                               max_sentence_length else sentence, x))
+
+# label list
+intents = ["greeting", "intent_resturant_search", "slots_wait", "slots_fill", "confirm"]
+intents_dict = {}
+for i in range(len(intents)):
+    intents[intents[i]] = i
+tmp = [0] * len(intents)
+# sample label
+extend_y = []
+for intent in y:
+    curr = tmp[:]
+    curr[intents_dict[intent]] = 1
+    extend_y.append(curr)
+y = extend_y
+
+# map word id to vector
 glove_data_path = os.path.join(FLAGS.glove_dir, "glove.{}.{}d.txt".format(FLAGS.glove_corpus, FLAGS.glove_vec_size))
 sizes = {'6B': int(4e5), '42B': int(1.9e6), '840B': int(2.2e6), '2B': int(1.2e6)}
 total = sizes[FLAGS.glove_corpus]
-glove_vacabulary = {}
+id_vector_dict = {}
 with open(glove_data_path, 'r', encoding='utf8') as gd:
     for line in tqdm(gd, total=total):
         array = line.strip().split(" ")
         word = array[0]
         vector = list(map(float, array[1:]))
-        glove_vacabulary[word] = vector
+        if word in vocab_dict:
+            id_vector_dict[vocab_dict[word]] = vector
+        elif word.capitalize() in vocab_dict:
+            id_vector_dict[vocab_dict[word.capitalize()]] = vector
+        elif word.lower() in vocab_dict:
+            id_vector_dict[vocab_dict[word.lower()]] = vector
+        elif word.upper() in vocab_dict:
+            id_vector_dict[vocab_dict[word.upper()]] = vector
+print("{}/{} of word vocab have corresponding vectors in {}".format(len(id_vector_dict), len(vocab_dict), glove_data_path))
+
+id_vector_dict = np.array([id_vector_dict[id + 1] if (id + 1) in id_vector_dict else
+                           np.random.multivariate_normal(np.zeros(FLAGS.glove_vec_size),
+                                                         np.eye(FLAGS.glove_vec_size)) for id in range(len(vocab_list))])
+
+
 # Build vocabulary
 #max_document_length = max([len(x.split(" ")) for x in x_text])
 #vocab_processor = learn.preprocessing.VocabularyProcessor(max_document_length)
@@ -104,10 +143,11 @@ with tf.Graph().as_default():
     sess = tf.Session(config=session_conf)
     with sess.as_default():
         cnn = TextCNN(
-            sequence_length=max_instance_length,
+            sequence_length=max_sentence_length,
             num_classes=len(intents),
+            vocabulary=vocabulary,
             vocab_size=0,
-            glove_vacabulary=glove_vacabulary,
+            glove_vacabulary=id_vector_dict,
             glove_embedding_size=FLAGS.glove_vec_size,
             embedding_size=FLAGS.glove_vec_size,
             embedding_style=FLAGS.embedding_style,
