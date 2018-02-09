@@ -15,13 +15,11 @@ def load_data(ffile, out_dir, test_sample_percentage, shuffle=True):
         utterance_data, intent_data = zip(*new_data)
         data_size = len(intent_data)
         if shuffle:
-            indices = np.random.permutation(np.arange(data_size))
-            utterance_shuffled, intent_shuffled = utterance_data[indices], intent_data[indices]
-        else:
-            utterance_shuffled, intent_shuffled = utterance_data, intent_data
+            np.random.shuffle(utterance_data)
+            np.random.shuffle(intent_data)
         test_sample_index = -1 * int(test_sample_percentage * float(data_size))
-        utterance_train, utterance_test = utterance_shuffled[:test_sample_index], utterance_shuffled[test_sample_index:]
-        intent_train, intent_test = intent_shuffled[:test_sample_index], intent_shuffled[test_sample_index:]
+        utterance_train, utterance_test = utterance_data[:test_sample_index], utterance_data[test_sample_index:]
+        intent_train, intent_test = intent_data[:test_sample_index], intent_data[test_sample_index:]
         data_dir = os.path.join(out_dir, "model_data")
         if not os.path.exists(data_dir):
             os.makedirs(data_dir)
@@ -43,11 +41,8 @@ def batch_iter(data, batch_size, num_epochs, shuffle=True):
     for epoch in range(num_epochs):
         # Shuffle the data at each epoch
         if shuffle:
-            shuffle_indices = np.random.permutation(np.arange(data_size))
-            shuffled_data = data[shuffle_indices]
-        else:
-            shuffled_data = data
+            np.random.shuffle(data)
         for batch_num in range(num_batches_per_epoch):
             start_index = batch_num * batch_size
             end_index = min((batch_num + 1) * batch_size, data_size)
-            yield shuffled_data[start_index:end_index]
+            yield data[start_index:end_index]
