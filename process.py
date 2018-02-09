@@ -15,8 +15,8 @@ def load_data(ffile, out_dir, test_sample_percentage, shuffle=True):
         utterance_data, intent_data = zip(*new_data)
         data_size = len(intent_data)
         if shuffle:
-            np.random.shuffle(utterance_data)
-            np.random.shuffle(intent_data)
+            utterance_data = np.random.permutation(utterance_data)
+            intent_data = np.random.permutation(intent_data)
         test_sample_index = -1 * int(test_sample_percentage * float(data_size))
         utterance_train, utterance_test = utterance_data[:test_sample_index], utterance_data[test_sample_index:]
         intent_train, intent_test = intent_data[:test_sample_index], intent_data[test_sample_index:]
@@ -41,7 +41,7 @@ def batch_iter(data, batch_size, num_epochs, shuffle=True):
     for epoch in range(num_epochs):
         # Shuffle the data at each epoch
         if shuffle:
-            np.random.shuffle(data)
+            data = np.random.permutation(data)
         for batch_num in range(num_batches_per_epoch):
             start_index = batch_num * batch_size
             end_index = min((batch_num + 1) * batch_size, data_size)
