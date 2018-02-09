@@ -11,8 +11,7 @@ def load_data(ffile, out_dir, test_sample_percentage, shuffle=True):
     if os.path.exists(ffile) and os.path.isfile(ffile):
         data = json.load(open(ffile, 'r'))
         intents = ["greeting", "intent_resturant_search", "slots_wait", "slots_fill", "confirm"]
-        new_data = [(d["utterances"][-1], d["intent"]) for d in data if d["utterances"][-1] != "<silence>" and
-                    not d["intent"] and d["intent"] in intents]
+        new_data = [(d["utterances"][-1], d["intent"]) for d in data if d["utterances"][-1] != "<silence>" and d["intent"] and d["intent"] in intents]
         utterance_data, intent_data = zip(*new_data)
         data_size = len(intent_data)
         if shuffle:

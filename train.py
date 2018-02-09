@@ -10,13 +10,15 @@ from tqdm import tqdm
 from text_cnn import TextCNN
 from tensorflow.contrib import learn
 
+import pdb
+
 # Parameters
 # ==================================================
 
 # Data loading params
-tf.flags.DEFINE_string("intention_data_file", "/nfs/project/data/", "Data source for intention classification")
+tf.flags.DEFINE_string("intention_data_file", "/nfs/project/data/dataset-E2E-goal-oriented/dialog-task1API-kb1_atmosphere-distr0.5-trn10000-new.json", "Data source for intention classification")
 tf.flags.DEFINE_float("dev_sample_percentage", .1, "Percentage of the training data to use for validation")
-tf.flags.DEFINE_string("glove_dir", "/nfs/project/data/", "glove data directory")
+tf.flags.DEFINE_string("glove_dir", "/nfs/project/data/glove/", "glove data directory")
 tf.flags.DEFINE_string("glove_corpus", "6B", "glove corpus (default: 6B)")
 tf.flags.DEFINE_integer("glove_vec_size", 100, "glove vector size (default: 100)")
 tf.flags.DEFINE_string("positive_data_file", "./data/rt-polaritydata/rt-polarity.pos", "Data source for the positive data.")
@@ -130,9 +132,9 @@ y_train, y_dev = y[:dev_sample_index], y[dev_sample_index:]
 #del x, y, x_shuffled, y_shuffled
 
 print("Train/Dev split: {:d}/{:d}".format(len(y_train), len(y_dev)))
-
-
-# Training
+pbd.set_trace()
+exit(0)
+# Trainingimport pdb
 # ==================================================
 
 with tf.Graph().as_default():
