@@ -117,6 +117,13 @@ with open(glove_data_path, 'r', encoding='utf8') as gd:
             id_vector_dict[vocab_dict[word.upper()]] = vector
 print("{}/{} of word vocab have corresponding vectors in {}".format(len(id_vector_dict), len(vocab_dict), glove_data_path))
 
+for sequence in x:
+    for index in range(len(sequence)):
+        if sequence[index] in id_vector_dict:
+            sequence[index] = id_vector_dict[sequence[index]]
+        else:
+            sequence[index] = [0] * FLAGS.glove_vec_size
+
 #id_vector_dict = np.array([id_vector_dict[id + 1] if (id + 1) in id_vector_dict else
 #                           np.zeros(FLAGS.glove_vec_size) for id in range(len(vocab_list))])
 

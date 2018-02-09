@@ -15,7 +15,7 @@ class TextCNN(object):
         self.basic_embedding_size = glove_embedding_size
 
         # Placeholders for input, output and dropout
-        self.input_x = tf.placeholder(tf.int32, [None, sequence_length], name="input_x")
+        self.input_x = tf.placeholder(tf.int32, [None, sequence_length, glove_embedding_size], name="input_x")
         self.input_y = tf.placeholder(tf.float32, [None, num_classes], name="input_y")
         self.dropout_keep_prob = tf.placeholder(tf.float32, name="dropout_keep_prob")
 
@@ -29,7 +29,7 @@ class TextCNN(object):
                 tf.random_uniform([len(vocabulary) + 1, glove_embedding_size], -1.0, 1.0),
                 name="random_embedding")
             '''
-            self.embedded_chars = self.do_embedding(self.input_x, embedding_style)
+            self.embedded_chars = self.input_x
             self.embedded_chars_expanded = tf.expand_dims(self.embedded_chars, -1)
 
         # use pre-trained glove embedding, trainable char-nn will be added
@@ -89,14 +89,3 @@ class TextCNN(object):
         with tf.name_scope("accuracy"):
             correct_predictions = tf.equal(self.predictions, tf.argmax(self.input_y, 1))
             self.accuracy = tf.reduce_mean(tf.cast(correct_predictions, "float"), name="accuracy")
-
-    def do_embedding(self, input, embedding_style):
-        if embedding_style == 'glove':
-            # [N, sequence_length] -> [N, sequence_length, embedding_size]
-            for sequence in input:
-                for index in range(len(sequence)):
-                    if sequence[index] in self.glove_embedding_vacab:
-                        sequence[index] = self.glove_embedding_vacab[sequence[index]]
-                    else:
-                        sequence[index] = [0] * self.basic_embedding_size
-        return input
