@@ -61,24 +61,33 @@ x, y = process.load_data(FLAGS.intention_data_file, out_dir, float(0.2), True)
 
 # corpus words
 vocabulary = set()
-map(lambda sentence: map(lambda word: vocabulary.add(word), sentence), x)
+for sentence in x:
+    for word in sentence:
+        vocabulary.add(word)
 
 vocab_list = list(vocabulary)
 # word index
 vocab_dict = {}
 for i in range(len(vocab_list)):
     vocab_dict[vocab_list[i]] = i+1
+print('dict size:' + str(len(vocab_dict)))
 
-x = list(map(lambda sentence: list(map(lambda word: vocab_dict[word], sentence)), x))
+x = list(map(lambda sentence: [vocab_dict[word] for word in sentence], x))
 max_sentence_length = max(list(map(len, x)))
+'''
 x = np.array(list(map(lambda sentence: sentence.append([0] * (max_sentence_length - len(sentence))) if len(sentence) <
                                                                                max_sentence_length else sentence, x)))
+'''
+for sentence in x:
+    if len(sentence) < max_sentence_length:
+       sentence[len(sentence):len(sentence)] = [0] * (max_sentence_length - len(sentence))
+x = np.array(x)
 
 # label list
 intents = ["greeting", "intent_resturant_search", "slots_wait", "slots_fill", "confirm"]
 intents_dict = {}
 for i in range(len(intents)):
-    intents[intents[i]] = i
+    intents_dict[intents[i]] = i
 tmp = [0] * len(intents)
 # sample label
 extend_y = []
@@ -132,8 +141,6 @@ y_train, y_dev = y[:dev_sample_index], y[dev_sample_index:]
 #del x, y, x_shuffled, y_shuffled
 
 print("Train/Dev split: {:d}/{:d}".format(len(y_train), len(y_dev)))
-pbd.set_trace()
-exit(0)
 # Trainingimport pdb
 # ==================================================
 
