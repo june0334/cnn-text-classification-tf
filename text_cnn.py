@@ -8,8 +8,8 @@ class TextCNN(object):
     Uses an embedding layer, followed by a convolutional, max-pooling and softmax layer.
     """
     def __init__(
-      self, sequence_length, num_classes, vocabulary, vocab_size, glove_vacabulary, glove_embedding_size,
-      embedding_size, embedding_style, filter_sizes, num_filters, l2_reg_lambda=0.0):
+      self, sequence_length, num_classes, vocabulary, glove_vacabulary, glove_embedding_size, embedding_style,
+            filter_sizes, num_filters, l2_reg_lambda=0.0):
 
         self.glove_embedding_vacab = glove_vacabulary
         self.basic_embedding_size = glove_embedding_size
@@ -24,12 +24,16 @@ class TextCNN(object):
 
         # Embedding layer
         with tf.device('/cpu:0'), tf.name_scope("embedding"):
+            '''
             self.random_embedding = tf.Variable(
-                tf.random_uniform([len(vocabulary), glove_embedding_size], -1.0, 1.0),
+                tf.random_uniform([len(vocabulary) + 1, glove_embedding_size], -1.0, 1.0),
                 name="random_embedding")
-            self.embedded_chars = self.do_embedding(self.input_x)
+            '''
+            self.embedded_chars = self.do_embedding(self.input_x, embedding_style)
             self.embedded_chars_expanded = tf.expand_dims(self.embedded_chars, -1)
 
+        # use pre-trained glove embedding, trainable char-nn will be added
+        embedding_size = glove_embedding_size
         # Create a convolution + maxpool layer for each filter size
         pooled_outputs = []
         for i, filter_size in enumerate(filter_sizes):
@@ -86,5 +90,13 @@ class TextCNN(object):
             correct_predictions = tf.equal(self.predictions, tf.argmax(self.input_y, 1))
             self.accuracy = tf.reduce_mean(tf.cast(correct_predictions, "float"), name="accuracy")
 
-    def do_embedding(self, embedding_style):
-        return embedding_style
+    def do_embedding(self, input, embedding_style):
+        if embedding_style == 'glove':
+            # [N, sequence_length] -> [N, sequence_length, embedding_size]
+            for sequence in input:
+                for index in range(len(sequence)):
+                    if sequence[index] in self.glove_embedding_vacab:
+                        sequence[index] = self.glove_embedding_vacab[sequence[index]]
+                    else:
+                        sequence[index] = [0] * self.basic_embedding_size
+        return input

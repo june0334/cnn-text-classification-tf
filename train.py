@@ -69,8 +69,8 @@ for i in range(len(vocab_list)):
 
 x = list(map(lambda sentence: list(map(lambda word: vocab_dict[word], sentence)), x))
 max_sentence_length = max(list(map(len, x)))
-x = list(map(lambda sentence: sentence.append([0] * (max_sentence_length - len(sentence))) if len(sentence) <
-                                                                               max_sentence_length else sentence, x))
+x = np.array(list(map(lambda sentence: sentence.append([0] * (max_sentence_length - len(sentence))) if len(sentence) <
+                                                                               max_sentence_length else sentence, x)))
 
 # label list
 intents = ["greeting", "intent_resturant_search", "slots_wait", "slots_fill", "confirm"]
@@ -84,7 +84,7 @@ for intent in y:
     curr = tmp[:]
     curr[intents_dict[intent]] = 1
     extend_y.append(curr)
-y = extend_y
+y = np.array(extend_y)
 
 # map word id to vector
 glove_data_path = os.path.join(FLAGS.glove_dir, "glove.{}.{}d.txt".format(FLAGS.glove_corpus, FLAGS.glove_vec_size))
@@ -106,9 +106,8 @@ with open(glove_data_path, 'r', encoding='utf8') as gd:
             id_vector_dict[vocab_dict[word.upper()]] = vector
 print("{}/{} of word vocab have corresponding vectors in {}".format(len(id_vector_dict), len(vocab_dict), glove_data_path))
 
-id_vector_dict = np.array([id_vector_dict[id + 1] if (id + 1) in id_vector_dict else
-                           np.random.multivariate_normal(np.zeros(FLAGS.glove_vec_size),
-                                                         np.eye(FLAGS.glove_vec_size)) for id in range(len(vocab_list))])
+#id_vector_dict = np.array([id_vector_dict[id + 1] if (id + 1) in id_vector_dict else
+#                           np.zeros(FLAGS.glove_vec_size) for id in range(len(vocab_list))])
 
 
 # Build vocabulary
@@ -143,13 +142,11 @@ with tf.Graph().as_default():
     sess = tf.Session(config=session_conf)
     with sess.as_default():
         cnn = TextCNN(
-            sequence_length=max_sentence_length,
-            num_classes=len(intents),
-            vocabulary=vocabulary,
-            vocab_size=0,
+            sequence_length=x.shape[1],
+            num_classes=y.shape[1],
+            vocabulary=vocab_dict,
             glove_vacabulary=id_vector_dict,
             glove_embedding_size=FLAGS.glove_vec_size,
-            embedding_size=FLAGS.glove_vec_size,
             embedding_style=FLAGS.embedding_style,
             filter_sizes=list(map(int, FLAGS.filter_sizes.split(","))),
             num_filters=FLAGS.num_filters,
