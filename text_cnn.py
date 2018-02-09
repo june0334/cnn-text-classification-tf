@@ -15,7 +15,7 @@ class TextCNN(object):
         self.basic_embedding_size = glove_embedding_size
 
         # Placeholders for input, output and dropout
-        self.input_x = tf.placeholder(tf.int32, [None, sequence_length, glove_embedding_size], name="input_x")
+        self.input_x = tf.placeholder(tf.float32, [None, sequence_length, glove_embedding_size], name="input_x")
         self.input_y = tf.placeholder(tf.float32, [None, num_classes], name="input_y")
         self.dropout_keep_prob = tf.placeholder(tf.float32, name="dropout_keep_prob")
 

@@ -81,21 +81,20 @@ x = np.array(list(map(lambda sentence: sentence.append([0] * (max_sentence_lengt
 for sentence in x:
     if len(sentence) < max_sentence_length:
        sentence[len(sentence):len(sentence)] = [0] * (max_sentence_length - len(sentence))
-x = np.array(x)
 
 # label list
 intents = ["greeting", "intent_resturant_search", "slots_wait", "slots_fill", "confirm"]
 intents_dict = {}
 for i in range(len(intents)):
     intents_dict[intents[i]] = i
-tmp = [0] * len(intents)
+tmp = [0.0] * len(intents)
 # sample label
 extend_y = []
 for intent in y:
     curr = tmp[:]
-    curr[intents_dict[intent]] = 1
+    curr[intents_dict[intent]] = 1.0 
     extend_y.append(curr)
-y = np.array(extend_y)
+y = extend_y
 
 # map word id to vector
 glove_data_path = os.path.join(FLAGS.glove_dir, "glove.{}.{}d.txt".format(FLAGS.glove_corpus, FLAGS.glove_vec_size))
@@ -117,13 +116,16 @@ with open(glove_data_path, 'r', encoding='utf8') as gd:
             id_vector_dict[vocab_dict[word.upper()]] = vector
 print("{}/{} of word vocab have corresponding vectors in {}".format(len(id_vector_dict), len(vocab_dict), glove_data_path))
 
+'''
 for sequence in x:
     for index in range(len(sequence)):
         if sequence[index] in id_vector_dict:
             sequence[index] = id_vector_dict[sequence[index]]
         else:
             sequence[index] = [0] * FLAGS.glove_vec_size
-
+'''
+x = list(map(lambda sentence: list(map(lambda word: id_vector_dict[word] if word in id_vector_dict else [float(0)] * FLAGS.glove_vec_size, sentence)), x))
+pdb.set_trace()
 #id_vector_dict = np.array([id_vector_dict[id + 1] if (id + 1) in id_vector_dict else
 #                           np.zeros(FLAGS.glove_vec_size) for id in range(len(vocab_list))])
 
@@ -158,8 +160,8 @@ with tf.Graph().as_default():
     sess = tf.Session(config=session_conf)
     with sess.as_default():
         cnn = TextCNN(
-            sequence_length=x.shape[1],
-            num_classes=y.shape[1],
+            sequence_length=max_sentence_length,
+            num_classes=len(intents),
             vocabulary=vocab_dict,
             glove_vacabulary=id_vector_dict,
             glove_embedding_size=FLAGS.glove_vec_size,
